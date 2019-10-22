@@ -13,6 +13,6 @@ The source code is written and designed for:
 After cloning this repo on the TX2, you must run `./pre-install-script.sh` in order to install the required software packages.
 
 ### Required Software Packages:
-#### Python:
+#### Python: (TX2 Optimized)
 1. Tensorflow 
 1. OpenCV
