@@ -11,6 +11,8 @@ The source code is written and designed for:
 
 ### Pre-requisites:
 After cloning this repo on the TX2, you must run `./pre-install-script.sh` in order to install the required software packages.
+1. `chmod +x pre-install-script.sh`
+1. `sudo ./pre-install-script.sh`
 
 ### Required Software Packages:
 #### Python: (TX2 Optimized)
