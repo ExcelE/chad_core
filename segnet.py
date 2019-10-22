@@ -25,15 +25,17 @@ import jetson.inference
 import jetson.utils
 
 import argparse
+import ctypes
 import sys
 
 # parse the command line
-parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", 
-						   formatter_class=argparse.RawTextHelpFormatter, epilog=jetson.inference.detectNet.Usage())
+parser = argparse.ArgumentParser(description="Segment a live camera stream using an semantic segmentation DNN.", 
+						   formatter_class=argparse.RawTextHelpFormatter, epilog=jetson.inference.segNet.Usage())
 
-parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
-parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
-parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
+parser.add_argument("--network", type=str, default="fcn-resnet18-voc", help="pre-trained model to load, see below for options")
+parser.add_argument("--filter-mode", type=str, default="linear", choices=["point", "linear"], help="filtering mode used during visualization, options are:\n  'point' or 'linear' (default: 'linear')")
+parser.add_argument("--ignore-class", type=str, default="void", help="optional name of class to ignore in the visualization results (default: 'void')")
+parser.add_argument("--alpha", type=float, default=175.0, help="alpha blending value to use during overlay, between 0.0 and 255.0 (default: 175.0)")
 parser.add_argument("--camera", type=str, default="0", help="index of the MIPI CSI camera to use (e.g. CSI camera 0)\nor for VL42 cameras, the /dev/video device to use.\nby default, MIPI CSI camera 0 will be used.")
 parser.add_argument("--width", type=int, default=1280, help="desired width of camera stream (default is 1280 pixels)")
 parser.add_argument("--height", type=int, default=720, help="desired height of camera stream (default is 720 pixels)")
@@ -45,34 +47,37 @@ except:
 	parser.print_help()
 	sys.exit(0)
 
-# load the object detection network
-# raise Exception(sys.argv)
-net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+# load the segmentation network
+net = jetson.inference.segNet(opt.network, sys.argv)
+
+# set the alpha blending value
+net.SetOverlayAlpha(opt.alpha)
+
+# allocate the output images for the overlay & mask
+img_overlay = jetson.utils.cudaAllocMapped(opt.width * opt.height * 4 * ctypes.sizeof(ctypes.c_float))
+img_mask = jetson.utils.cudaAllocMapped(opt.width/2 * opt.height/2 * 4 * ctypes.sizeof(ctypes.c_float))
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
 display = jetson.utils.glDisplay()
-
 
 # process frames until user exits
 while display.IsOpen():
 	# capture the image
 	img, width, height = camera.CaptureRGBA()
 
-	# detect objects in the image (with overlay)
-	detections = net.Detect(img, width, height, opt.overlay)
+	# process the segmentation network
+	net.Process(img, width, height, opt.ignore_class)
 
-	# print the detections
-	print("detected {:d} objects in image".format(len(detections)))
+	# generate the overlay and mask
+	net.Overlay(img_overlay, width, height, opt.filter_mode)
+	net.Mask(img_mask, width/2, height/2, opt.filter_mode)
 
-	for detection in detections:
-		print(detection)
-
-	# render the image
-	display.RenderOnce(img, width, height)
+	# render the images
+	display.BeginRender()
+	display.Render(img_overlay, width, height)
+	display.Render(img_mask, width/2, height/2, width)
+	display.EndRender()
 
 	# update the title bar
 	display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
-
-	# print out performance info
-	# net.PrintProfilerTimes()
