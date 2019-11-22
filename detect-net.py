@@ -23,6 +23,7 @@
 
 import jetson.inference
 import jetson.utils
+# from pseyepy import Camera
 
 import argparse
 import sys
@@ -48,6 +49,8 @@ except:
 # load the object detection network
 # raise Exception(sys.argv)
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+
+# cam = Camera(0)
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
