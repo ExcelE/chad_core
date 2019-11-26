@@ -66,16 +66,16 @@ while display.IsOpen():
 	detections = net.Detect(img, width, height, opt.overlay)
 
 	# print the detections
-	print("detected {:d} objects in image".format(len(detections)))
+	# print("detected {:d} objects in image".format(len(detections)))
 
 	for detection in detections:
-		print(detection)
+		print(detection.Center)
 
 	# render the image
-	display.RenderOnce(img, width, height)
+	# display.RenderOnce(img, width, height)
 
 	# update the title bar
-	display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+	# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
 
 	# print out performance info
 	# net.PrintProfilerTimes()

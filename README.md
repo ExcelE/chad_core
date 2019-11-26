@@ -24,3 +24,6 @@ After cloning this repo on the TX2, you must run `./pre-install-script.sh` in or
     1. https://devtalk.nvidia.com/default/topic/1051923/jetson-tx2/make-error-usr-bin-ld-cannot-find-lgl-/post/5339745/#5339745
         1. You may have to specify the full path on libGL.so
             1. `sudo ln -sfn libGL.so.1.0.0 /usr/lib/aarch64-linux-gnu/libGL.so`
+
+## How to run:
+`python detect-net.py --camera=/dev/video1`
