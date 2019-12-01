@@ -26,7 +26,7 @@ import jetson.utils
 import serial
 # from pseyepy import Camera
 
-import argparse, sys, time, random
+import argparse, sys, time, random, cv2
 from label import *
 
 HEIGHT = 720
@@ -54,7 +54,6 @@ except:
 # raise Exception(sys.argv)
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 # cam = Camera(0)
-
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
 display = jetson.utils.glDisplay()
@@ -114,10 +113,10 @@ try:
 			else:
 				print(search_objects())
 
-		# display.RenderOnce(img, width, height)
+		display.RenderOnce(img, width, height)
 
 		# update the title bar
-		# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+		display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
 
 except Exception as e:
 	# ser.close()

@@ -31,7 +31,7 @@ if [[ $HAS_JETSON_INFERENCE -eq "0" ]]; then
     echo -e "Installing Jetson Inference package..."
     sleep 3
     apt-get update
-    apt-get install git cmake libpython3-dev python3-numpy
+    apt-get install -y git cmake libpython3-dev python3-numpy
     git clone --recursive https://github.com/dusty-nv/jetson-inference
     cd jetson-inference
     mkdir build
