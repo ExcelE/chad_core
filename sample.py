@@ -1,25 +1,4 @@
 #!/usr/bin/python
-#
-# Copyright (c) 2019, NVIDIA CORPORATION. All rights reserved.
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-# DEALINGS IN THE SOFTWARE.
-#
 
 import jetson.inference
 import jetson.utils
@@ -60,7 +39,7 @@ camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
 display = jetson.utils.glDisplay()
 
 INTERESTS = [44, 47, 48, 49, 50]
-SAMPLE = [62]
+SAMPLE = [62, 72, 8, 33]
 
 # ser = serial.Serial('/dev/ttyUSB0')
 
@@ -76,21 +55,20 @@ def get_ping():
 def move_to_obj_center(obj_center):
 	distance = get_ping()
 
-	x, y = obj_center
-	if x < 500:
-		return b'drive 127 3\n'
-	elif x > 800:
+	w_local, h_local = obj_center
+	if w_local < 500:
 		return b'drive 127 1\n'
-	elif y > 480:
+	elif w_local > 800:
+		return b'drive 127 3\n'
+	elif h_local > 480:
 		return b'stop\n'
 	return b'drive 127 0\n'
 
+LAST_SEARCH = time.time()
 LAST_SEARCH_ROTATE = time.time()
-LAST_SEARCH_DRIVE = time.time()
 
 def search_objects():
 	choices = [0, 1]
-	now = time.time()
 	if (time.time() - LAST_SEARCH_ROTATE) > 3:
 		return b'rotate 127 %s' % random.choice(choices)
 	return ""
@@ -107,17 +85,21 @@ try:
 			# 1. Is it an object we want to get?
 			# 2. Where is the object relative to the screen?
 			# 3. How close to the robot (ping sensor)
-			# print(detection.Confidence)
-			if detection.ClassID in SAMPLE and detection.Confidence > .50:
-				print(move_to_obj_center(detection.Center))
+			if detection.ClassID in INTERESTS and detection.Confidence > .50:
+				width_local, height_local = detection.Center
+				if (WIDTH/2) - 30 < width_local < (WIDTH/2) + 30:
+					# Now that we have the object is center of the screen, get ping data
+					distance = get_ping()
+					if distance <= 44:
+						pass # TODO: Activate scoop
 
 			else:
-				print(search_objects())
+				pass
 
-		# display.RenderOnce(img, width, height)
+		display.RenderOnce(img, width, height)
 
 		# update the title bar
-		# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+		display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
 
 except Exception as e:
 	# ser.close()
