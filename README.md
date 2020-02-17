@@ -9,6 +9,9 @@ The source code is written and designed for:
 1. Jetson TX2
 1. Arduino Uno Mega
 
+### Current Design
+![](CHAD_v2.png)
+
 ### Pre-requisites:
 After cloning this repo on the TX2, you must run `./pre-install-script.sh` in order to install the required software packages.
 1. `chmod +x pre-install-script.sh`
