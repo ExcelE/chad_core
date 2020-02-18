@@ -35,6 +35,7 @@ if [[ $HAS_JETSON_INFERENCE -eq "0" ]]; then
     git clone --recursive https://github.com/dusty-nv/jetson-inference
     cd jetson-inference
     mkdir build
+    cd build
     cmake ../
     make -j4
     sudo make install

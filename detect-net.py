@@ -68,12 +68,12 @@ while display.IsOpen():
 	# print the detections
 	# print("detected {:d} objects in image".format(len(detections)))
 
-	for detection in detections:
-		# if detection.Center
-		print(detection.Center)
+	for detected in detections:
+		if detected in targets:
+			print("We have detected a target {}".format(detected))
 
 	# render the image
-	# display.RenderOnce(img, width, height)
+	display.RenderOnce(img, width, height)
 
 	# update the title bar
 	# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
