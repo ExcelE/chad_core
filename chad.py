@@ -99,7 +99,7 @@ try:
 		display.RenderOnce(img, width, height)
 
 		# update the title bar
-		display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
+		# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
 
 except Exception as e:
 	# ser.close()
