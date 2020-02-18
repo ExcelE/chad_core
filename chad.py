@@ -45,58 +45,73 @@ SAMPLE = [62, 72, 8, 33]
 
 LAST_PING = time.time()
 
-def get_ping():
+def ask_distance():
 	"""Return ping command if it has been a few milliseconds"""
+	global LAST_PING
 	now = time.time()
 	if now - LAST_PING > .2:
+		LAST_PING = time.time()
 		return b'ping'
 	return None
 
-def move_to_obj_center(obj_center):
-	distance = get_ping()
+def run_scoop():
+	"""
+		If the object is in between 30 to 35 cm, then activate the scoop
+	"""
+	if ask_distance() is not None and 30 < ask_distance() < 35:
+		return b'scoop'
+	return None
+		
 
-	w_local, h_local = obj_center
-	if w_local < 500:
-		return b'drive 127 1\n'
-	elif w_local > 800:
-		return b'drive 127 3\n'
-	elif h_local > 480:
-		return b'stop\n'
-	return b'drive 127 0\n'
+def turning(horizontal_value):
+	midpoint = 1280/2
+	if horizontal_value < midpoint:
+		# If it's to the left of the screen, we send the command to move to the right
+		# Assumes the left of the image is 0 and the right of the image is 1280)
+		speed = 255 * ((midpoint-horizontal_value)/midpoint)
+		rotation = 0
+		return speed, rotation
+	else:
+		speed = 255 * ((horizontal_value-midpoint)/midpoint)
+		rotation = 1
+		return speed, rotation
 
-LAST_SEARCH = time.time()
-LAST_SEARCH_ROTATE = time.time()
+def align_to_center_horizontal(obj_center):
+	"""
+		Three cases:
+		1. When the object center is at the center, we move to vertical controls.
+		2. When object is at the left of the target zone, we move the bot to the right.
+		3. '' '' right, ''' ''' left
+	"""
 
-def search_objects():
-	choices = [0, 1]
-	if (time.time() - LAST_SEARCH_ROTATE) > 3:
-		return b'rotate 127 %s' % random.choice(choices)
-	return ""
+	h_local, w_local = obj_center
+
+	speed, rotation = turning(h_local)
+	return b'drive {} {}\n'.format(speed, rotation)
+
 
 try:
-	while display.IsOpen():
+	while True:
 		# capture the image
 		img, width, height = camera.CaptureRGBA()
 
 		# detect objects in the image (with overlay)
 		detections = net.Detect(img, width, height, opt.overlay)
-
+		found = False
 		for detection in detections:
 			# 1. Is it an object we want to get?
 			# 2. Where is the object relative to the screen?
 			# 3. How close to the robot (ping sensor)
-			if detection.ClassID in INTERESTS and detection.Confidence > .50:
-				width_local, height_local = detection.Center
-				if (WIDTH/2) - 30 < width_local < (WIDTH/2) + 30:
-					# Now that we have the object is center of the screen, get ping data
-					distance = get_ping()
-					if distance <= 44:
-						pass # TODO: Activate scoop
+			if found is False and detection.ClassID in INTERESTS and detection.Confidence > .50:
+				
+				print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
 
+
+				found = True
 			else:
 				pass
 
-		display.RenderOnce(img, width, height)
+		# display.RenderOnce(img, width, height)
 
 		# update the title bar
 		# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
