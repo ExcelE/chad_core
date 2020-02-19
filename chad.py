@@ -3,6 +3,7 @@
 import jetson.inference
 import jetson.utils
 import serial
+from time import sleep
 # from pseyepy import Camera
 
 import argparse, sys, time, random
@@ -36,7 +37,7 @@ net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
-display = jetson.utils.glDisplay()
+# display = jetson.utils.glDisplay()
 
 INTERESTS = [44, 47, 48, 49, 50]
 SAMPLE = [62, 72, 8, 33]
@@ -70,11 +71,11 @@ def turning(horizontal_value):
 		# Assumes the left of the image is 0 and the right of the image is 1280)
 		speed = 255 * ((midpoint-horizontal_value)/midpoint)
 		rotation = 0
-		return speed, rotation
+		return int(speed), rotation
 	else:
 		speed = 255 * ((horizontal_value-midpoint)/midpoint)
 		rotation = 1
-		return speed, rotation
+		return int(speed), rotation
 
 def align_to_center_horizontal(obj_center):
 	"""
@@ -105,16 +106,13 @@ try:
 			if found is False and detection.ClassID in INTERESTS and detection.Confidence > .50:
 				
 				print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
+				sleep(.1)
+				# ser.write(align_to_center_horizontal(detection.Center))
 
 
 				found = True
 			else:
 				pass
-
-		# display.RenderOnce(img, width, height)
-
-		# update the title bar
-		# display.SetTitle("{:s} | Network {:.0f} FPS".format(opt.network, net.GetNetworkFPS()))
 
 except Exception as e:
 	# ser.close()
