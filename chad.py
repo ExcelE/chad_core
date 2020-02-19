@@ -12,7 +12,7 @@ from label import *
 HEIGHT = 720
 WIDTH = 1280
 DEBUG = True
-MIDPOINT = int(WIDTH/2)
+W_MIDPOINT = int(WIDTH/2)
 
 # parse the command line
 parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", 
@@ -88,9 +88,9 @@ def align_to_center_horizontal(obj_center):
 		3. '' '' right, ''' ''' left
 	"""
 
-	h_local, w_local = obj_center
+	w_local, h_local = obj_center
 
-	speed, rotation = turning(h_local)
+	speed, rotation = turning(w_local)
 	return b'drive {} {}\n'.format(speed, rotation)
 
 
@@ -118,10 +118,16 @@ try:
 
 					sleep(1)
 
-					h_local, w_local = detection.Center
-					if MIDPOINT-20 < h_local < MIDPOINT+20:
+					w_local, h_local = detection.Center
+
+					# This portion assumes that the target object is centered by the width of the frame.
+					# Now we control to move forwards or backwards then pick up the object 
+					if W_MIDPOINT-20 < w_local < W_MIDPOINT+20:
 						# TODO: Need to work on forward/backward movements.
 						ser.write(run_scoop())
+
+					# This portion of the code assumes the object is the side of the frame, so we try to 
+					# align as close to the midpoint of the width of the frame
 					else:
 						ser.write(align_to_center_horizontal(detection.Center))
 
