@@ -19,13 +19,16 @@ The autonomous functionality design is based on NVIDIA's Jetson TX2 platform. We
 We explored the possibility of the using one of our Desktop Server as a command-and-control server and send the video stream captured from the robot and receive the commands from there. The key issue we ran into in the first design was the unreliable connection between the server and the robot. This meant that for this robot to operate autonomously, it would require a WiFi network or an LTE adapter on the design, which would add more latency on processing.
 
 ### Autonomous Functionality Design
-![](./CHAD_v2.png =100x20)
+<img src="CHAD_V2.png" height="300" />
 
 The autonomous functionality heavily relies on image processing to find and detect objects on each frame. Once it finishes compiling the list of objects detected in the frame, the algorithm matches each object if they are present on the object of interests (`INTEREST`).
 
-<img src="assets/detection.png" height="300" />
+<img src="assets/detection.png" height="300"/>
 
-`INTERESTS` is a list that matches the class IDs of the detected objects. We then 
+`INTERESTS` is a list that matches the class IDs of the detected objects. This is mapped using the `label.py`file to match the name of the object.
+
+<img src="assets/label_maps.png" height="300"/>
+
 
 ### Pre-requisites:
 After cloning this repo on the TX2, you must run `./pre-install-script.sh` in order to install the required software packages.
