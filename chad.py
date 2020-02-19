@@ -11,6 +11,8 @@ from label import *
 
 HEIGHT = 720
 WIDTH = 1280
+DEBUG = True
+MIDPOINT = int(WIDTH/2)
 
 # parse the command line
 parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", 
@@ -42,7 +44,8 @@ camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
 INTERESTS = [44, 47, 48, 49, 50]
 SAMPLE = [62, 72, 8, 33]
 
-# ser = serial.Serial('/dev/ttyUSB0')
+if not DEBUG:
+	ser = serial.Serial('/dev/ttyUSB0')
 
 LAST_PING = time.time()
 
@@ -65,7 +68,7 @@ def run_scoop():
 		
 
 def turning(horizontal_value):
-	midpoint = 1280/2
+	midpoint = WIDTH/2
 	if horizontal_value < midpoint:
 		# If it's to the left of the screen, we send the command to move to the right
 		# Assumes the left of the image is 0 and the right of the image is 1280)
@@ -104,10 +107,23 @@ try:
 			# 2. Where is the object relative to the screen?
 			# 3. How close to the robot (ping sensor)
 			if found is False and detection.ClassID in INTERESTS and detection.Confidence > .50:
-				
-				print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
-				sleep(.1)
-				# ser.write(align_to_center_horizontal(detection.Center))
+				if DEBUG:
+					print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
+					sleep(.1)
+				else:
+					ping_comm = ask_distance()
+					obj_distance = None
+					if ping_comm is not None:
+						obj_distance = ser.write(ping_comm)
+
+					sleep(1)
+
+					h_local, w_local = detection.Center
+					if MIDPOINT-20 < h_local < MIDPOINT+20:
+						# TODO: Need to work on forward/backward movements.
+						ser.write(run_scoop())
+					else:
+						ser.write(align_to_center_horizontal(detection.Center))
 
 
 				found = True
@@ -115,5 +131,7 @@ try:
 				pass
 
 except Exception as e:
-	# ser.close()
+	if not DEBUG:
+		ser.write('stop')
+		ser.close()
 	raise
