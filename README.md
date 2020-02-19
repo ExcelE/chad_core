@@ -9,8 +9,8 @@ The source code is written and designed for:
 1. Jetson TX2
 1. Arduino Uno Mega
 
-## How to run:
-`python chad.py --camera=/dev/video1`
+## How to run: (Debug Disabled -- only for testing)
+`python chad.py --camera=/dev/video1 --no-debug`
 
 ### Current Functionality Design
 

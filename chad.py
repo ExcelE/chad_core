@@ -11,7 +11,6 @@ from label import *
 
 HEIGHT = 720
 WIDTH = 1280
-DEBUG = True
 W_MIDPOINT = int(WIDTH/2)
 
 # parse the command line
@@ -25,12 +24,19 @@ parser.add_argument("--camera", type=str, default="0", help="index of the MIPI C
 parser.add_argument("--width", type=int, default=WIDTH, help="desired width of camera stream (default is 1280 pixels)")
 parser.add_argument("--height", type=int, default=HEIGHT, help="desired height of camera stream (default is 720 pixels)")
 
+parser.add_argument('--debug', dest='DEBUG', action='store_true')
+parser.add_argument('--no-debug', dest='DEBUG', action='store_false')
+parser.set_defaults(DEBUG=True)
+
+
 try:
 	opt = parser.parse_known_args()[0]
+	DEBUG = opt.DEBUG 
 except:
 	print("")
 	parser.print_help()
 	sys.exit(0)
+
 
 # load the object detection network
 # raise Exception(sys.argv)
