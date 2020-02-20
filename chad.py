@@ -12,6 +12,7 @@ from label import *
 HEIGHT = 720
 WIDTH = 1280
 W_MIDPOINT = int(WIDTH/2)
+H_MIDPOINT = int(HEIGHT/2)
 
 # parse the command line
 parser = argparse.ArgumentParser(description="Locate objects in a live camera stream using an object detection DNN.", 
@@ -68,7 +69,8 @@ def run_scoop():
 	"""
 		If the object is in between 30 to 35 cm, then activate the scoop
 	"""
-	if ask_distance() is not None and 30 < ask_distance() < 35:
+	distance = ask_distance()
+	if distance is not None and 30 < distance < 35:
 		return b'scoop'
 	return None
 		
@@ -96,8 +98,35 @@ def align_to_center_horizontal(obj_center):
 
 	w_local, h_local = obj_center
 
-	speed, rotation = turning(w_local)
-	return b'drive {} {}\n'.format(speed, rotation)
+	speed, direction = turning(w_local)
+	return b'rotate {} {}\n'.format(speed, direction)
+
+def drive_opts(vertical_position):
+	midpoint = HEIGHT/2
+	if vertical_position < midpoint:
+		# If it's to the top of the screen, we drive forward
+		# Assumes the bottom of the image is 0 and the right of the top is 720)
+		speed = 255 * ((midpoint-vertical_position)/midpoint)
+		direction = 0
+		return int(speed), direction
+	else:
+		speed = 255 * ((vertical_position-midpoint)/midpoint)
+		direction = 1
+		return int(speed), direction
+
+
+def align_to_center_vertical(obj_center):
+	"""
+		Three cases:
+		1. When the object center is at the center, we move start the scooping.
+		2. When object is at the too low in the frame, move backwards.
+		3. When its too high, move forwards.
+	"""
+
+	w_local, h_local = obj_center
+
+	speed, direction = drive_opts(h_local)
+	return b'drive {} {}\n'.format(speed, direction)
 
 
 try:
@@ -114,30 +143,36 @@ try:
 			# 3. How close to the robot (ping sensor)
 			if found is False and detection.ClassID in INTERESTS and detection.Confidence > .50:
 				if DEBUG:
-					print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
+					# print(detection.ClassID, align_to_center_horizontal(detection.Center), ask_distance())
 					sleep(.1)
-				else:
-					ping_comm = ask_distance()
-					obj_distance = None
-					if ping_comm is not None:
-						obj_distance = ser.write(ping_comm)
+					w, h = detection.Center
+					print(detection.Center)
+					if h < H_MIDPOINT:
+						print("Near the center ", h, detection.Center)
 
-					sleep(1)
+				else:
 
 					w_local, h_local = detection.Center
 
 					# This portion assumes that the target object is centered by the width of the frame.
 					# Now we control to move forwards or backwards then pick up the object 
-					if W_MIDPOINT-20 < w_local < W_MIDPOINT+20:
+					if (W_MIDPOINT-40) < w_local < (W_MIDPOINT+40):
 						# TODO: Need to work on forward/backward movements.
-						ser.write(run_scoop())
+
+						if (H_MIDPOINT-20) < h_local < (H_MIDPOINT+20):
+							scoop = run_scoop()
+							if scoop is not None:
+								running = ser.write(scoop)
+								# We need to block controls until it returns the response scooped.
+								while running is not 'scooped':
+									sleep(0.1)
+						else:
+							ser.write(align_to_center_vertical(detection.Center))
 
 					# This portion of the code assumes the object is the side of the frame, so we try to 
 					# align as close to the midpoint of the width of the frame
 					else:
 						ser.write(align_to_center_horizontal(detection.Center))
-
-
 				found = True
 			else:
 				pass
