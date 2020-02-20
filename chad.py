@@ -52,7 +52,7 @@ INTERESTS = [44, 47, 48, 49, 50]
 SAMPLE = [62, 72, 8, 33]
 
 if not DEBUG:
-	ser = serial.Serial('/dev/ttyUSB0')
+	ser = serial.Serial('/dev/ttyACM0')
 
 LAST_PING = time.time()
 
@@ -177,8 +177,8 @@ try:
 			else:
 				pass
 
-except Exception as e:
+except:
 	if not DEBUG:
-		ser.write('stop')
+		ser.write(b'stop')
 		ser.close()
 	raise
