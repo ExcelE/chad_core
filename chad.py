@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description="Locate objects in a live camera st
 parser.add_argument("--network", type=str, default="ssd-mobilenet-v2", help="pre-trained model to load (see below for options)")
 parser.add_argument("--overlay", type=str, default="box,labels,conf", help="detection overlay flags (e.g. --overlay=box,labels,conf)\nvalid combinations are:  'box', 'labels', 'conf', 'none'")
 parser.add_argument("--threshold", type=float, default=0.5, help="minimum detection threshold to use") 
-parser.add_argument("--camera", type=str, default="0", help="index of the MIPI CSI camera to use (e.g. CSI camera 0)\nor for VL42 cameras, the /dev/video device to use.\nby default, MIPI CSI camera 0 will be used.")
+parser.add_argument("--camera", type=str, default="/dev/video1", help="index of the MIPI CSI camera to use (e.g. CSI camera 0)\nor for VL42 cameras, the /dev/video device to use.\nby default, MIPI CSI camera 0 will be used.")
 parser.add_argument("--width", type=int, default=WIDTH, help="desired width of camera stream (default is 1280 pixels)")
 parser.add_argument("--height", type=int, default=HEIGHT, help="desired height of camera stream (default is 720 pixels)")
 
@@ -158,11 +158,13 @@ try:
 					# Now we control to move forwards or backwards then pick up the object 
 					if (W_MIDPOINT-40) < w_local < (W_MIDPOINT+40):
 						# TODO: Need to work on forward/backward movements.
-
+						# Stop whatever commands was sent before.
+						ser.write(b'stop')
 						if (H_MIDPOINT-20) < h_local < (H_MIDPOINT+20):
 							scoop = run_scoop()
 							if scoop is not None:
 								running = ser.write(scoop)
+								
 								# We need to block controls until it returns the response scooped.
 								while running is not 'scooped':
 									sleep(0.1)
