@@ -11,6 +11,7 @@ from label import *
 
 HEIGHT = 720
 WIDTH = 1280
+GLOBAL_MOTOR_MAX_SPEED = 150
 W_MIDPOINT = int(WIDTH/2)
 H_MIDPOINT = int(HEIGHT/2)
 
@@ -80,11 +81,11 @@ def turning(horizontal_value):
 	if horizontal_value < midpoint:
 		# If it's to the left of the screen, we send the command to move to the right
 		# Assumes the left of the image is 0 and the right of the image is 1280)
-		speed = 255 * ((midpoint-horizontal_value)/midpoint)
+		speed = GLOBAL_MOTOR_MAX_SPEED * ((midpoint-horizontal_value)/midpoint)
 		rotation = 0
 		return int(speed), rotation
 	else:
-		speed = 255 * ((horizontal_value-midpoint)/midpoint)
+		speed = GLOBAL_MOTOR_MAX_SPEED * ((horizontal_value-midpoint)/midpoint)
 		rotation = 1
 		return int(speed), rotation
 
@@ -106,11 +107,11 @@ def drive_opts(vertical_position):
 	if vertical_position < midpoint:
 		# If it's to the top of the screen, we drive forward
 		# Assumes the bottom of the image is 0 and the right of the top is 720)
-		speed = 255 * ((midpoint-vertical_position)/midpoint)
+		speed = GLOBAL_MOTOR_MAX_SPEED * ((midpoint-vertical_position)/midpoint)
 		direction = 0
 		return int(speed), direction
 	else:
-		speed = 255 * ((vertical_position-midpoint)/midpoint)
+		speed = GLOBAL_MOTOR_MAX_SPEED * ((vertical_position-midpoint)/midpoint)
 		direction = 1
 		return int(speed), direction
 
