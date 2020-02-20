@@ -159,8 +159,8 @@ try:
 					if (W_MIDPOINT-40) < w_local < (W_MIDPOINT+40):
 						# TODO: Need to work on forward/backward movements.
 						# Stop whatever commands was sent before.
-						ser.write(b'stop')
 						if (H_MIDPOINT-20) < h_local < (H_MIDPOINT+20):
+							ser.write(b'stop')
 							scoop = run_scoop()
 							if scoop is not None:
 								running = ser.write(scoop)
