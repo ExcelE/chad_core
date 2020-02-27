@@ -51,6 +51,7 @@ except:
 net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
 
 # cam = Camera(0)
+targets = []
 
 # create the camera and display
 camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
