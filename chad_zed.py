@@ -5,11 +5,11 @@ import jetson.utils
 import serial
 from time import sleep
 
-import argparse, sys, time, random
+import argparse, sys, time, random, os
 from label import *
 
 from chad_helper import *
-
+from chad_helper.chad_helper import Navigator
 
 HEIGHT = 720
 WIDTH = 1280
@@ -77,36 +77,55 @@ display = jetson.utils.glDisplay()
 INTERESTS = [44, 47, 48, 49, 50]
 SAMPLE = [62, 72, 8, 33]
 
-def lower_half(img):
+def lower_half(img, is_left_cam=None):
     y = img.shape[0]
     x = img.shape[1]
-    new_img = img[int(y/2):int(15*y/20),0:x]
+    if is_left_cam is not None:
+        new_img = img[int(y/2):int(15*y/20),0:x]
+    else:
+        new_img = img[int(13*y/20):int(16*y/20),0:x]
     return new_img, new_img.shape[1], new_img.shape[0]
 
 if not DEBUG:
     ser = serial.Serial('/dev/ttyACM0')
+    nav = Navigator(serial=ser)
+else:
+    nav = Navigator()
 
-nav = Navigator(serial=ser)
+def return_detections(image, is_left_cam=None):
+    if is_left_cam is not None:
+        img, x, y = lower_half(image, is_left_cam=True)
+    else:
+        img, x, y = lower_half(image)
+
+    input_image = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA).astype(np.float32)
+    input_image = jetson.utils.cudaFromNumpy(input_image)
+    # detect objects in the image (with overlay)
+    detections = net.Detect(input_image, x, y, opt.overlay)
+
+    return detections, input_image, x, y
+
+def return_adjusted_image(frame, left=None):
+    left_right_image = np.split(frame, 2, axis=1)
+    if left is not None:
+        img = cv2.rotate(left_right_image[0], cv2.ROTATE_90_CLOCKWISE)
+    else:
+        img = cv2.rotate(left_right_image[1], cv2.ROTATE_90_CLOCKWISE)
+    return img
 
 try:
     while True:
         #### capture the image
         retval, frame = cap.read()
         # Extract left and right images from side-by-side
-        left_right_image = np.split(frame, 2, axis=1)
-        left = cv2.rotate(left_right_image[0], cv2.ROTATE_90_CLOCKWISE)
-        right = cv2.rotate(left_right_image[1], cv2.ROTATE_90_CLOCKWISE)
+        is_left = True
+        left_img = return_adjusted_image(frame, left=is_left)
+        detections, cropped, x, y = return_detections(left_img, is_left_cam=is_left)
 
-        input_image, x, y = lower_half(left)
-
-        input_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2RGBA).astype(np.float32)
-        input_image = jetson.utils.cudaFromNumpy(input_image)
-        # detect objects in the image (with overlay)
-        detections = net.Detect(input_image, x, y, opt.overlay)
-        found = False
         if DEBUG and display.IsOpen():
-            display.RenderOnce(input_image, x, y)
+            display.RenderOnce(cropped, x, y)
 
+        found = False
         for detection in detections:
             # 1. Is it an object we want to get?
             # 2. Where is the object relative to the screen?
@@ -121,41 +140,12 @@ try:
                         print("Near the center ", h, detection.Center)
                 else:
 
-                    w_local, h_local = detection.Center
-                    nav.update_target(w_local, h_local)
+                    nav.update_target(detection.Center, height, width)
 
                     # This portion assumes that the target object is centered by the width of the frame.
                     # Now we control to move forwards or backwards then pick up the object 
                     if (W_MIDPOINT-40) < w_local < (W_MIDPOINT+40):
-                        # TODO: Need to work on forward/backward movements.
-                        # Stop whatever commands was sent before.
-                        left_right_image = np.split(frame, 2, axis=1)
-                        right = cv2.rotate(left_right_image[1], cv2.ROTATE_90_CLOCKWISE)
-
-                        input_image, x, y = lower_half(left)
-
-                        input_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2RGBA).astype(np.float32)
-                        input_image = jetson.utils.cudaFromNumpy(input_image)
-                        lower_detections = net.Detect(input_image, x, y, opt.overlay)
-
-                        for i in lower_detections:
-                            if detection.ClassID == i:
-                                w_, h_ = i.Center
-                                nav.update_target(w_, h_)
-                                nav.forward()
-
-                            if (H_MIDPOINT-20) < h_local < (H_MIDPOINT+20):
-                                
-                                ser.write(b'stop')
-                                scoop = run_scoop()
-                                if scoop is not None:
-                                    running = ser.write(scoop)
-                                    
-                                    # We need to block controls until it returns the response scooped.
-                                    while running is not 'scooped':
-                                        sleep(0.01)
-                            else:
-                                ser.write(align_to_center_vertical(detection.Center))
+                        nav.pick_up()
 
                     # This portion of the code assumes the object is the side of the frame, so we try to 
                     # align as close to the midpoint of the width of the frame

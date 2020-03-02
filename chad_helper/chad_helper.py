@@ -78,7 +78,7 @@ def align_to_center_vertical(obj_center):
 	return b'drive {} {}\n'.format(speed, direction)
 
 class Navigator:
-	def __init__(self, name="Unnamed", serial, center=None):
+	def __init__(self, serial=None, center=None, name="Unnamed"):
 		self.name = name
 		self.command_history = deque()
 		self.speed = 100
@@ -88,20 +88,29 @@ class Navigator:
 		self.last_ping = 10
 		if center is not None:
 			self.t_y, self.t_x = center
+		self.w_center = None
+		self.h_center = None
 
 	def ping(self):
 		if (self.last_ping - time.time()) > 0.1:
-			self.current_distance = self.ser.write(b"ping")
+			self.current_distance = self.send_comm(b"ping")
 			self.last_ping = time.time()
 		return self.current_distance
 
-	def update_target(self, center):
-		self.t_y, self.t_x = center
+	def send_comm(command=None):
+		if command is not None and self.ser is not None:
+			if len(self.command_history) > self.history_size_limit:
+				self.command_history.popleft()
+			self.command_history.append(command)
+			self.ser.write(command)
+		print("DATA SENT: {}".format(command))
 
-	def update_history(self, command):
-		if len(self.command_history) > self.history_size_limit:
-			self.command_history.popleft()
-		self.command_history.append(command)
+	def update_target(self, center, width=None, height=None):
+		self.t_y, self.t_x = center
+		if width is not None and width > 0:
+			self.w_center = int(width / 2) 
+		if height is not None and height > 0:
+			self.h_center = int(height / 2) 
 
 	def change_speed(self, speed):
 		self.speed = speed
@@ -109,34 +118,42 @@ class Navigator:
 	def drive(self, mode=None, rotate=None, drive_setting=None):
 		"""
 			Mode: 0 -> forward
-					2 -> reverse
+				  2 -> reverse
 		"""
 		if mode:
 			comm = b"{} {} {}\n".format(mode, self.speed, drive_setting)
 		if rotate:
 			comm = b"rotate {} {}\n".format(self.speed, rotate)
-		self.update_history(comm)
 		return comm
+
+	def lateral_move(self):
+		start = time.time()
+		while time.time() - start < .2:
+			error_margin = 20
+			if self.t_x > (self.w_center + error_margin):
+				self.send_comm(drive(mode="drive", drive_setting="1"))
+			elif self.t_x < (self.w_center - error_margin):
+				self.send_comm(drive(mode="drive", drive_setting="3"))
 
 	def forward(self):
 		start = time.time()
 		while time.time() - start < .2:
-			ser.write(drive(mode="drive", drive_setting="0"))
+			self.send_comm(drive(mode="drive", drive_setting="0"))
 
 	def reverse(self):
 		start = time.time()
 		while time.time() - start < 0.2:
-			ser.write(drive(mode="drive", drive_setting="0"))
+			self.send_comm(drive(mode="drive", drive_setting="2"))
 
 	def rotate_left(self):
 		start = time.time()
 		while time.time() - start < 2:
-			ser.write(drive(rotate="0"))
+			self.send_comm(drive(rotate="0"))
 
 	def rotate_right(self):
 		start = time.time()
 		while time.time() - start < 2:
-			ser.write(drive(rotate="1"))
+			self.send_comm(drive(rotate="1"))
 
 	def pick_up(self):
 		timer = time.time()
@@ -145,7 +162,7 @@ class Navigator:
 				self.forward()
 			else:
 				self.reverse()
-		while ser.write(b"scoop") != "scooped" or time.time() - timer > 90:
+		while self.ser.write(b"scoop") != "scooped" or time.time() - timer > 90:
 			# cancel if it takes more than 90 seconds to respond
 			self.t_x = None
 			self.t_y = None
@@ -155,26 +172,28 @@ class Navigator:
 		self.ping()
 		start = time.time()
 
-
-		if self.current_distance() < 30:
-			self.reverse()
-		elif self.current_distance() < 50 and self.t_x is not None:
-			# There is an object/obstacle but its not something we want to pick up
-			random.choice([self.rotate_left(), self.rotate_right()])
-		elif self.current_distance() < 50 and self.t_x:
-			# We found the object
-			self.pick_up()
-		else:
-			val = random.choices(
-				[0, 1, 2],
-				weights=[0.5, 0.25, 0.25])
-			if val == 0:
-				self.forward()
-			elif val == 1:
-				self.rotate_left()
+		if self.ser is not None:
+			if self.current_distance() < 30:
+				self.reverse()
+			elif self.current_distance() < 50 and self.t_x is not None:
+				# There is an object/obstacle but its not something we want to pick up
+				random.choice([self.rotate_left(), self.rotate_right()])
+			elif self.current_distance() < 50 and self.t_x:
+				# We found the object
+				self.pick_up()
 			else:
-				self.rotate_right()
+				val = random.choices(
+					[0, 1, 2],
+					weights=[0.5, 0.25, 0.25])
+				if val == 0:
+					self.forward()
+				elif val == 1:
+					self.rotate_left()
+				else:
+					self.rotate_right()
+		else:
+			print("Executing random walk")
 			
-	def blind_run():
-		while True:
+	def blind_run(self):
+		if self.ser is not None:
 			self.random_walk()
