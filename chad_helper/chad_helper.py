@@ -92,7 +92,7 @@ class Navigator:
 		self.h_center = None
 
 	def ping(self):
-		if (self.last_ping - time.time()) > 0.1:
+		if (time.time() - self.last_ping) > 0.1:
 			self.current_distance = self.send_comm(b"ping")
 			self.last_ping = time.time()
 		return self.current_distance
@@ -126,14 +126,22 @@ class Navigator:
 			comm = b"rotate {} {}\n".format(self.speed, rotate)
 		return comm
 
-	def lateral_move(self):
+	def centerize_width(self):
+		self.ping()
 		start = time.time()
-		while time.time() - start < .2:
+		while time.time() - start < .1:
 			error_margin = 20
 			if self.t_x > (self.w_center + error_margin):
-				self.send_comm(drive(mode="drive", drive_setting="1"))
+				self.send_comm(self.rotate_left())
 			elif self.t_x < (self.w_center - error_margin):
-				self.send_comm(drive(mode="drive", drive_setting="3"))
+				self.send_comm(self.rotate_right())
+			else:
+				return 1 # Object is centered by width within the margin
+		self.stop()
+		return 0 # Object is not centered yet
+
+	def stop(self):
+		self.send_comm(b"stop")
 
 	def forward(self):
 		start = time.time()
@@ -142,18 +150,14 @@ class Navigator:
 
 	def reverse(self):
 		start = time.time()
-		while time.time() - start < 0.2:
+		while time.time() - start < .2:
 			self.send_comm(drive(mode="drive", drive_setting="2"))
 
 	def rotate_left(self):
-		start = time.time()
-		while time.time() - start < 2:
-			self.send_comm(drive(rotate="0"))
+		self.send_comm(drive(rotate="0"))
 
 	def rotate_right(self):
-		start = time.time()
-		while time.time() - start < 2:
-			self.send_comm(drive(rotate="1"))
+		self.send_comm(drive(rotate="1"))
 
 	def pick_up(self):
 		timer = time.time()

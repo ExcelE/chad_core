@@ -120,10 +120,10 @@ try:
         # Extract left and right images from side-by-side
         is_left = True
         left_img = return_adjusted_image(frame, left=is_left)
-        detections, cropped, x, y = return_detections(left_img, is_left_cam=is_left)
+        detections, cropped, cropped_width, cropped_height = return_detections(left_img, is_left_cam=is_left)
 
         if DEBUG and display.IsOpen():
-            display.RenderOnce(cropped, x, y)
+            display.RenderOnce(cropped, cropped_width, cropped_height)
 
         found = False
         for detection in detections:
@@ -140,8 +140,8 @@ try:
                         print("Near the center ", h, detection.Center)
                 else:
 
-                    nav.update_target(detection.Center, height, width)
-
+                    nav.update_target(detection.Center, y, x)
+                    w_local, h_local = detection.Center
                     # This portion assumes that the target object is centered by the width of the frame.
                     # Now we control to move forwards or backwards then pick up the object 
                     if (W_MIDPOINT-40) < w_local < (W_MIDPOINT+40):
@@ -150,7 +150,12 @@ try:
                     # This portion of the code assumes the object is the side of the frame, so we try to 
                     # align as close to the midpoint of the width of the frame
                     else:
-                        ser.write(align_to_center_horizontal(detection.Center))
+                        aligned = False
+                        while not aligned:
+                            nav.centerize_width()
+                            # Returns 1 when its in center
+                            if nav.centerize_width() == 1:
+                                aligned = True
                 found = True
             else:
                 nav.blind_run()
