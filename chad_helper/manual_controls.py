@@ -1,4 +1,13 @@
-import curses,serial, time
+import curses, serial, time
+
+screen_help_text = """
+========
+
+Use W,A,S,D to move without changing the direction its facing
+Use K,L to rotate the bot
+Use 1, 2 to decrease or increase speed
+
+"""
 
 class Controller:
     def __init__(self, ser=None):
@@ -24,7 +33,7 @@ class Controller:
         try:
             while True:
                 char = self.screen.getch()
-                self.screen.addstr(6, 0, "========\n\nUse W,A,S,D to move without changing the direction its facing\nUse K,L to rotate the bot\nUse 1, 2 to decrease or increase speed\n")
+                self.screen.addstr(6, 0, screen)
                 self.screen.addstr(3, 0, "Current speed: {}\n".format(self.speed))
                 if char == ord('q'):
                     self.ser.write(b"stop")
