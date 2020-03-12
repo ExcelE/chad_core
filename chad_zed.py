@@ -124,7 +124,8 @@ try:
 
         if DEBUG and display.IsOpen():
             display.RenderOnce(cropped, cropped_width, cropped_height)
-
+            print(dir(display))
+            # raise
         found = False
         for detection in detections:
             # 1. Is it an object we want to get?
