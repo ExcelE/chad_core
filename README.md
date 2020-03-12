@@ -1,9 +1,9 @@
 # Chad-Core
 
-Object Detection and Distance Estimation Module for Chad Bot
+Object Detection and Control Module for Chad Bot
 
 ### Description
-This repo holds the source code for much of the Object Detection and Distance Estimation functionality for Chad. 
+This repo holds the source code for much of the Object Detection and Control functionality for Chad. 
 
 The source code is written and designed for:
 1. Jetson TX2
