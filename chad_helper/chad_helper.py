@@ -1,7 +1,7 @@
 
 import time, random, curses
 from collections import deque
-from manual_controls import Controller
+# from manual_controls import Controller
 
 LAST_PING = time.time()
 
@@ -90,10 +90,10 @@ class Navigator:
 			self.t_y, self.t_x = center
 		self.w_center = None
 		self.h_center = None
-		self.Controller = Controller(self.ser)
+		# self.Controller = Controller(self.ser)
 
-	def controller(self):
-		pass
+	# def controller(self):
+	# 	pass
 		
 	def ping(self):
 		if (time.time() - self.last_ping) > 0.1:
@@ -205,9 +205,3 @@ class Navigator:
 	def blind_run(self):
 		if self.ser is not None:
 			self.random_walk()
-
-import serial
-ser = serial.Serial('/dev/ttyACM0')
-
-p = Navigator(serial=ser)
-p.controller()
